@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# FastAPI
+*.db
+*.sqlite
+
+# Data and outputs
+data/cache/*.pkl
+data/outputs/*.ttl
+data/mitos_annotations/*.json
+data/analysis/
+outputs/
+
+# PDFs and large files
+data/curricula/*.pdf
+data/legal_texts/*.pdf
+data/pdfs/*.pdf
+
+# RDF cache
+data/ceds_cache/*.rdf
+
+# Environment
+.env
+.env.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*~
+
+# Test outputs
+test_*.py

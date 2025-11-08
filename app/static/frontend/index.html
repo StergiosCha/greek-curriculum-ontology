@@ -1,0 +1,1923 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Greek Curriculum Ontology Extractor</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .extraction-form {
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e1e5e9;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .source-options {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .radio-option label {
+            margin: 0;
+            font-weight: 500;
+            cursor: pointer;
+            color: #374151;
+        }
+
+        .file-upload {
+            border: 3px dashed #d1d5db;
+            border-radius: 15px;
+            padding: 40px;
+            text-align: center;
+            background: #f9fafb;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .file-upload:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+
+        .file-upload.dragover {
+            border-color: #667eea;
+            background: #e0e7ff;
+            transform: scale(1.02);
+        }
+
+        .file-upload-icon {
+            font-size: 48px;
+            color: #9ca3af;
+            margin-bottom: 16px;
+        }
+
+        .file-upload-text {
+            color: #6b7280;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+
+        .file-upload-hint {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .selected-files {
+            margin-top: 20px;
+        }
+
+        .file-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #f0f9ff;
+            border: 1px solid #e0f2fe;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+
+        .file-item-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .file-item-icon {
+            color: #0ea5e9;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .file-item-name {
+            font-weight: 500;
+        }
+
+        .file-item-size {
+            color: #64748b;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .remove-file {
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .remove-file:hover {
+            background: #dc2626;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .btn {
+            padding: 14px 32px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.6);
+        }
+
+        .btn-primary:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: #6b7280;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #4b5563;
+            transform: translateY(-1px);
+        }
+
+        .progress-container {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            text-align: center;
+            margin-top: 10px;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .results-section {
+            margin-top: 40px;
+            display: none;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .results-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(45deg, #f0f9ff, #e0f2fe);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            border: 1px solid #bae6fd;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #0ea5e9;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .turtle-output {
+            background: #1e293b;
+            color: #e2e8f0;
+            padding: 25px;
+            border-radius: 12px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 14px;
+            line-height: 1.6;
+            max-height: 500px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            border: 1px solid #374151;
+        }
+
+        .turtle-output::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .turtle-output::-webkit-scrollbar-track {
+            background: #2d3748;
+        }
+
+        .turtle-output::-webkit-scrollbar-thumb {
+            background: #4a5568;
+            border-radius: 4px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .alert {
+            padding: 16px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            border-color: #22c55e;
+            color: #166534;
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            border-color: #f59e0b;
+            color: #92400e;
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            border-color: #3b82f6;
+            color: #1e40af;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Visualization Styles */
+        .visualization-container {
+            margin-top: 40px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            text-align: center;
+        }
+
+        .visualization-container h3 {
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+
+        .tooltip {
+            position: absolute;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+            font-size: 12px;
+            max-width: 300px;
+            line-height: 1.4;
+            z-index: 1000;
+        }
+
+        .list-btn {
+            background: none;
+            border: none;
+            color: #2563eb;
+            cursor: pointer;
+            padding: 4px 0;
+            text-align: left;
+            font-size: 14px;
+            width: 100%;
+        }
+
+        .list-btn:hover {
+            text-decoration: underline;
+        }
+
+        /* List controls styles */
+        .list-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .toggle-list-btn {
+            padding: 10px 15px;
+            border: 1px solid #ccc;
+            background-color: #f0f0f0;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 500;
+        }
+
+        .toggle-list-btn.active {
+            background-color: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .list-group > ul {
+            display: none;
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .list-group > ul.active {
+            display: block;
+        }
+
+        .list-group li {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .list-group li:last-child {
+            border-bottom: none;
+        }
+
+        /* Contradiction Detection Styles */
+        .contradiction-section {
+            margin-top: 40px;
+            padding: 30px;
+            background: #f8fafc;
+            border-radius: 15px;
+            border: 2px solid #e2e8f0;
+        }
+
+        .contradiction-section h3 {
+            color: #1f2937;
+            margin-bottom: 25px;
+            font-size: 1.3rem;
+        }
+
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .checkbox-option {
+            display: flex;
+            align-items: center;
+            padding: 10px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .checkbox-option:hover {
+            background: #f3f4f6;
+        }
+
+        .checkbox-option input[type="checkbox"] {
+            margin-right: 10px;
+            width: 18px;
+            height: 18px;
+        }
+
+        .checkbox-option label {
+            margin: 0;
+            cursor: pointer;
+            font-weight: 500;
+        }
+
+        .contradiction-results {
+            margin-top: 30px;
+            padding: 25px;
+            background: white;
+            border-radius: 12px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .contradiction-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .contradiction-stat {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(45deg, #fef3c7, #fde68a);
+            border-radius: 10px;
+            border: 1px solid #f59e0b;
+        }
+
+        .contradiction-stat.high-severity {
+            background: linear-gradient(45deg, #fee2e2, #fecaca);
+            border-color: #ef4444;
+        }
+
+        .contradiction-stat.medium-severity {
+            background: linear-gradient(45deg, #fff3cd, #ffeaa7);
+            border-color: #f39c12;
+        }
+
+        .contradiction-stat.low-severity {
+            background: linear-gradient(45deg, #d1fae5, #a7f3d0);
+            border-color: #10b981;
+        }
+
+        .contradiction-number {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .contradiction-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .contradiction-item {
+            margin-bottom: 20px;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+
+        .contradiction-item.high {
+            background: #fef2f2;
+            border-color: #ef4444;
+        }
+
+        .contradiction-item.medium {
+            background: #fffbeb;
+            border-color: #f59e0b;
+        }
+
+        .contradiction-item.low {
+            background: #f0fdf4;
+            border-color: #22c55e;
+        }
+
+        .contradiction-type {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .contradiction-description {
+            margin-bottom: 12px;
+            line-height: 1.6;
+        }
+
+        .contradiction-elements {
+            font-size: 14px;
+            color: #6b7280;
+            margin-bottom: 10px;
+        }
+
+        .contradiction-recommendation {
+            font-weight: 500;
+            color: #059669;
+            font-style: italic;
+        }
+
+        .analysis-report {
+            margin-top: 25px;
+            padding: 25px;
+            background: #f8fafc;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            font-family: 'Georgia', serif;
+            line-height: 1.7;
+        }
+        .query-section {
+                    margin-top: 40px;
+                    padding: 30px;
+                    background: #f0f9ff;
+                    border-radius: 15px;
+                    border: 2px solid #bae6fd;
+                }
+
+                .query-results {
+                    padding: 25px;
+                    background: white;
+                    border-radius: 12px;
+                    border: 1px solid #e5e7eb;
+                }
+
+                .query-result-item {
+                    margin-bottom: 15px;
+                    padding: 15px;
+                    border-radius: 8px;
+                    background: #f8fafc;
+                    border-left: 4px solid #3b82f6;
+                }
+
+                .query-result-title {
+                    font-weight: 600;
+                    margin-bottom: 8px;
+                    color: #1f2937;
+                }
+
+                .query-result-description {
+                    color: #6b7280;
+                    font-size: 14px;
+                }
+
+                .sparql-input {
+                    min-height: 120px;
+                    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+                }
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+
+            .main-content {
+                padding: 25px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .results-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .source-options {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Greek Curriculum Ontology Extractor</h1>
+            <p>Extract educational ontologies from Greek curricula using advanced AI and knowledge enhancement</p>
+        </div>
+
+        <div class="main-content">
+            <div id="alert-container"></div>
+
+            <form id="extractionForm" class="extraction-form">
+                <div class="form-group">
+                    <label>Choose Curriculum Source</label>
+                    <div class="source-options">
+                        <div class="radio-option">
+                            <input type="radio" id="uploadOption" name="sourceOption" value="upload" checked>
+                            <label for="uploadOption">📤 Upload New PDF(s)</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="localOption" name="sourceOption" value="local">
+                            <label for="localOption">📁 Use Local Curriculum</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="uploadSection" class="form-group">
+                    <label for="fileInput">Upload Curriculum PDF(s)</label>
+                    <div class="file-upload" id="fileUpload">
+                        <div class="file-upload-icon">📄</div>
+                        <div class="file-upload-text">Click here or drag and drop your PDF files</div>
+                        <div class="file-upload-hint">Supports multiple PDF files (max 10MB each)</div>
+                        <input type="file" id="fileInput" multiple accept=".pdf" style="display: none;">
+                    </div>
+                    <div id="selectedFiles" class="selected-files"></div>
+                </div>
+
+                <div id="localSection" class="form-group" style="display: none;">
+                    <label for="localCurriculum">Select Local Curriculum</label>
+                    <select id="localCurriculum">
+                        <option value="">Loading curricula...</option>
+                    </select>
+                    <div id="curriculumInfo" class="file-item" style="display: none; margin-top: 10px;">
+                        <div class="file-item-info">
+                            <div class="file-item-icon">📄</div>
+                            <div>
+                                <div class="file-item-name" id="curriculumName"></div>
+                                <div class="file-item-size" id="curriculumSize"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="extractionMode">Extraction Mode</label>
+                        <select id="extractionMode" required>
+                            <option value="">Select extraction mode...</option>
+                            <option value="LLM_ONLY">LLM Only - Basic extraction</option>
+                            <option value="LLM_ENHANCED">LLM Enhanced - With external knowledge</option>
+                            <option value="RAG_ONLY">RAG Only - Using curriculum database</option>
+                            <option value="RAG_ENHANCED">RAG Enhanced - Full enhancement</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="llmProvider">LLM Provider</label>
+                        <select id="llmProvider" required>
+                            <option value="">Select provider...</option>
+                            <option value="OPENAI">OpenAI (GPT-4)</option>
+                            <option value="ANTHROPIC">Anthropic (Claude)</option>
+                            <option value="GOOGLE">Google (Gemini)</option>
+                            <option value="COHERE">Cohere</option>
+                            <option value="OLLAMA">Ollama (Local)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="apiKey">API Key</label>
+                    <input type="password" id="apiKey" placeholder="Enter your API key (leave empty for Ollama)">
+                </div>
+
+                <div class="form-group">
+                    <label for="modelName">Model Name (Optional)</label>
+                    <input type="text" id="modelName" placeholder="e.g., gpt-4, claude-3-sonnet, gemini-pro">
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="extractBtn">
+                    🚀 Extract Ontology
+                </button>
+                
+                <button type="button" class="btn btn-secondary" id="contradictionBtn" style="margin-left: 15px;">
+                    🔍 Detect Contradictions
+                </button>
+                <button type="button" class="btn btn-secondary" id="queryBtn" style="margin-left: 15px;">
+                    🔍 Query Ontology
+                </button>
+            </form>
+
+            <div class="contradiction-section" id="contradictionSection" style="display: none;">
+                <h3>🔍 Contradiction Detection</h3>
+                
+                <div class="form-group">
+                    <label>Analysis Type</label>
+                    <div class="source-options">
+                        <div class="radio-option">
+                            <input type="radio" id="internalAnalysis" name="analysisType" value="internal" checked>
+                            <label for="internalAnalysis">📄 Internal Contradictions</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="crossAnalysis" name="analysisType" value="cross">
+                            <label for="crossAnalysis">📚 Cross-Curriculum Analysis</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="progressionAnalysis" name="analysisType" value="progression">
+                            <label for="progressionAnalysis">📈 Progression Analysis</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Detection Method</label>
+                    <div class="source-options">
+                        <div class="radio-option">
+                            <input type="radio" id="basicDetection" name="detectionMethod" value="basic" checked>
+                            <label for="basicDetection">🔍 Basic Detection</label>
+                        </div>
+                        <div class="radio-option">
+                            <input type="radio" id="ragDetection" name="detectionMethod" value="rag_enhanced">
+                            <label for="ragDetection">🧠 RAG-Enhanced Detection</label>
+                        </div>
+                    </div>
+                    <div id="ragStatus" class="file-item" style="display: none; margin-top: 10px; background: #f0f9ff;">
+                        <div class="file-item-info">
+                            <div class="file-item-icon">🧠</div>
+                            <div>
+                                <div class="file-item-name" id="ragStatusText">Loading RAG status...</div>
+                                <div class="file-item-size" id="ragCurriculaCount"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="internalAnalysisSection">
+                    <div class="form-group">
+                        <label for="contradictionFile">Select Curriculum for Analysis</label>
+                        <select id="contradictionFile">
+                            <option value="">Select curriculum...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="crossAnalysisSection" style="display: none;">
+                    <div class="form-group">
+                        <label>Select Multiple Curricula for Comparison</label>
+                        <div id="curriculaCheckboxes" class="checkbox-group">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <div id="progressionAnalysisSection" style="display: none;">
+                    <div class="form-group">
+                        <label>Select Curricula for Progression Analysis</label>
+                        <div id="progressionCheckboxes" class="checkbox-group">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <button type="button" class="btn btn-primary" id="analyzeBtn">
+                    🔬 Analyze Contradictions
+                </button>
+            </div>
+
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Processing...</div>
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <div class="results-header">
+                    <h2 class="results-title">📊 Extraction Results</h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="downloadBtn">📥 Download Turtle</button>
+                        <button class="btn btn-secondary" id="copyBtn">📋 Copy to Clipboard</button>
+                    </div>
+                </div>
+
+                <div class="results-stats" id="resultsStats"></div>
+                
+                <div class="visualization-container">
+                    <h3>Knowledge Graph Visualization</h3>
+                    <svg id="knowledgeGraph" width="100%" height="600"></svg>
+                    
+                    <div class="lists-container">
+                        <div class="list-controls">
+                            <button class="toggle-list-btn active" data-target="entitiesList">Entities</button>
+                            <button class="toggle-list-btn" data-target="relationsList">Relations</button>
+                            <button class="toggle-list-btn" data-target="conceptsList">Concepts</button>
+                        </div>
+                        
+                        <div class="list-group">
+                            <ul id="entitiesList" class="active"></ul>
+                            <ul id="conceptsList"></ul>
+                            <ul id="relationsList"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>RDF Turtle Output</label>
+                    <div class="turtle-output" id="turtleOutput"></div>
+                </div>
+            </div>
+
+            <div class="contradiction-results" id="contradictionResults" style="display: none;">
+                <div class="results-header">
+                    <h2 class="results-title">🔍 Contradiction Analysis Results</h2>
+                    <div class="action-buttons">
+                        <button class="btn btn-secondary" id="downloadReportBtn">📥 Download Report</button>
+                        <button class="btn btn-secondary" id="copyReportBtn">📋 Copy Report</button>
+                    </div>
+                </div>
+
+                <div class="contradiction-summary" id="contradictionSummary">
+                    <!-- Will be populated with contradiction statistics -->
+                </div>
+
+                <div id="contradictionsList">
+                    <!-- Will be populated with detailed contradictions -->
+                </div>
+
+                <div class="analysis-report" id="analysisReport">
+                    <!-- Will be populated with LLM analysis report -->
+                </div>
+            </div>
+            <div class="query-section" id="querySection" style="display: none;">
+                            <h3>🔍 Query Curriculum Ontology</h3>
+                            
+                            <div class="form-group">
+                                <label for="queryType">Query Type</label>
+                                <select id="queryType">
+                                    <option value="modules_by_topic">Find Modules by Topic</option>
+                                    <option value="all_modules">List All Modules</option>
+                                    <option value="learning_path_steps">Get Learning Path Steps</option>
+                                    <option value="cross_curricular">Cross-Curricular Connections</option>
+                                    <option value="topics_count">Count Total Topics</option>
+                                    <option value="sparql">Custom SPARQL Query</option>
+                                </select>
+                            </div>
+
+                            <div id="queryParams" class="form-group">
+                                <!-- Will be populated dynamically -->
+                            </div>
+
+                            <button type="button" class="btn btn-primary" id="executeQueryBtn">
+                                🔎 Execute Query
+                            </button>
+
+                            <div class="query-results" id="queryResults" style="display: none; margin-top: 30px;">
+                                <h4>Query Results</h4>
+                                <div id="queryResultsContent"></div>
+                            </div>
+                        </div>
+        </div>
+    </div>
+    
+    <div class="tooltip" id="tooltip"></div>
+</body>
+</html>
+<script>
+class CurriculumExtractor {
+    constructor() {
+        this.selectedFiles = [];
+        this.apiBaseUrl = '/api';
+        this.lastResult = null;
+        this.lastContradictionResult = null;
+        this.graphNodes = null;
+        this.graphLinks = null;
+        this.availableCurricula = [];
+        this.initEventListeners();
+    }
+
+    initEventListeners() {
+        document.querySelectorAll('input[name="sourceOption"]').forEach(radio => {
+            radio.addEventListener('change', this.handleSourceChange.bind(this));
+        });
+
+        document.querySelectorAll('input[name="analysisType"]').forEach(radio => {
+            radio.addEventListener('change', this.handleAnalysisTypeChange.bind(this));
+        });
+        document.querySelectorAll('input[name="detectionMethod"]').forEach(radio => {
+            radio.addEventListener('change', this.handleDetectionMethodChange.bind(this));
+        });
+
+        const fileUpload = document.getElementById('fileUpload');
+        const fileInput = document.getElementById('fileInput');
+
+        fileUpload.addEventListener('click', () => fileInput.click());
+        fileUpload.addEventListener('dragover', this.handleDragOver.bind(this));
+        fileUpload.addEventListener('dragleave', this.handleDragLeave.bind(this));
+        fileUpload.addEventListener('drop', this.handleDrop.bind(this));
+        fileInput.addEventListener('change', this.handleFileSelect.bind(this));
+
+        document.getElementById('localCurriculum').addEventListener('change', this.handleLocalSelection.bind(this));
+        document.getElementById('extractionForm').addEventListener('submit', this.handleSubmit.bind(this));
+        document.getElementById('downloadBtn').addEventListener('click', this.downloadTurtle.bind(this));
+        document.getElementById('copyBtn').addEventListener('click', this.copyToClipboard.bind(this));
+        document.getElementById('llmProvider').addEventListener('change', this.handleProviderChange.bind(this));
+        
+        // Contradiction detection listeners
+        document.getElementById('contradictionBtn').addEventListener('click', this.showContradictionSection.bind(this));
+        document.getElementById('analyzeBtn').addEventListener('click', this.handleContradictionAnalysis.bind(this));
+        document.getElementById('downloadReportBtn').addEventListener('click', this.downloadReport.bind(this));
+        document.getElementById('copyReportBtn').addEventListener('click', this.copyReport.bind(this));
+        document.getElementById('queryBtn').addEventListener('click', this.showQuerySection.bind(this));
+        document.getElementById('executeQueryBtn').addEventListener('click', this.executeQuery.bind(this));
+        document.getElementById('queryType').addEventListener('change', this.handleQueryTypeChange.bind(this));
+        this.loadLocalCurricula();
+        this.checkRAGStatus();
+    }
+
+    handleSourceChange(e) {
+        const uploadSection = document.getElementById('uploadSection');
+        const localSection = document.getElementById('localSection');
+        if (e.target.value === 'upload') {
+            uploadSection.style.display = 'block';
+            localSection.style.display = 'none';
+        } else {
+            uploadSection.style.display = 'none';
+            localSection.style.display = 'block';
+        }
+    }
+
+    handleAnalysisTypeChange(e) {
+        const sections = ['internalAnalysisSection', 'crossAnalysisSection', 'progressionAnalysisSection'];
+        sections.forEach(section => {
+            document.getElementById(section).style.display = 'none';
+        });
+        
+        document.getElementById(e.target.value + 'AnalysisSection').style.display = 'block';
+    }
+
+    async loadLocalCurricula() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/curricula`);
+            if (!response.ok) throw new Error('Failed to load curricula');
+            const curricula = await response.json();
+            this.availableCurricula = curricula;
+            
+            const select = document.getElementById('localCurriculum');
+            select.innerHTML = '<option value="">Select a curriculum...</option>';
+            
+            const contradictionSelect = document.getElementById('contradictionFile');
+            contradictionSelect.innerHTML = '<option value="">Select curriculum...</option>';
+            
+            curricula.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.filename;
+                option.textContent = `${c.filename} (${this.formatFileSize(c.size)})`;
+                select.appendChild(option);
+                
+                const contradictionOption = option.cloneNode(true);
+                contradictionSelect.appendChild(contradictionOption);
+            });
+            
+            // Populate checkboxes for cross-curriculum and progression analysis
+            this.populateCheckboxes('curriculaCheckboxes', curricula);
+            this.populateCheckboxes('progressionCheckboxes', curricula);
+            
+        } catch {
+            document.getElementById('localCurriculum').innerHTML = '<option value="">No curricula available</option>';
+            document.getElementById('contradictionFile').innerHTML = '<option value="">No curricula available</option>';
+        }
+    }
+
+    populateCheckboxes(containerId, curricula) {
+        const container = document.getElementById(containerId);
+        container.innerHTML = '';
+        
+        curricula.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'checkbox-option';
+            div.innerHTML = `
+                <input type="checkbox" id="${containerId}_${c.filename}" value="${c.filename}">
+                <label for="${containerId}_${c.filename}">${c.filename}</label>
+            `;
+            container.appendChild(div);
+        });
+    }
+
+    handleLocalSelection(e) {
+        const info = document.getElementById('curriculumInfo');
+        const name = document.getElementById('curriculumName');
+        const size = document.getElementById('curriculumSize');
+        if (e.target.value) {
+            name.textContent = e.target.value;
+            size.textContent = e.target.options[e.target.selectedIndex].text.split('(')[1]?.replace(')', '') || '';
+            info.style.display = 'flex';
+        } else {
+            info.style.display = 'none';
+        }
+    }
+
+    handleDragOver(e) { e.preventDefault(); document.getElementById('fileUpload').classList.add('dragover'); }
+    handleDragLeave(e) { e.preventDefault(); document.getElementById('fileUpload').classList.remove('dragover'); }
+    handleDrop(e) { e.preventDefault(); document.getElementById('fileUpload').classList.remove('dragover'); this.addFiles(Array.from(e.dataTransfer.files)); }
+    handleFileSelect(e) { this.addFiles(Array.from(e.target.files)); }
+
+    addFiles(files) {
+        const pdfFiles = files.filter(f => f.type === 'application/pdf');
+        if (pdfFiles.length !== files.length) this.showAlert('warning', 'Only PDFs are accepted.');
+        pdfFiles.forEach(f => {
+            if (f.size > 10 * 1024 * 1024) { this.showAlert('error', `File ${f.name} is too large.`); return; }
+            if (!this.selectedFiles.find(x => x.name === f.name)) this.selectedFiles.push(f);
+        });
+        this.updateFileList();
+    }
+
+    updateFileList() {
+        const container = document.getElementById('selectedFiles');
+        container.innerHTML = this.selectedFiles.map((f, i) => `
+          <div class="file-item">
+            <div class="file-item-info"><div class="file-item-icon">📄</div>
+              <div><div class="file-item-name">${f.name}</div><div class="file-item-size">${this.formatFileSize(f.size)}</div></div>
+            </div>
+            <button type="button" class="remove-file" onclick="extractor.removeFile(${i})">Remove</button>
+          </div>`).join('');
+    }
+
+    removeFile(i) { this.selectedFiles.splice(i, 1); this.updateFileList(); }
+    formatFileSize(b) { if (!b) return '0 Bytes'; const k = 1024, s = ['Bytes', 'KB', 'MB', 'GB'], i = Math.floor(Math.log(b) / Math.log(k)); return (b / Math.pow(k, i)).toFixed(2) + ' ' + s[i]; }
+
+    handleProviderChange(e) {
+        const apiKeyField = document.getElementById('apiKey');
+        const modelField = document.getElementById('modelName');
+        if (e.target.value === 'OLLAMA') {
+            apiKeyField.placeholder = 'No API key required'; apiKeyField.required = false; modelField.placeholder = 'e.g., llama2, mistral';
+        } else {
+            apiKeyField.placeholder = 'Enter your API key'; apiKeyField.required = true; 
+            if (e.target.value === 'GOOGLE') {
+                modelField.placeholder = 'e.g., gemini-pro, gemini-1.5-pro';
+            } else {
+                modelField.placeholder = 'e.g., gpt-4, claude-3-sonnet';
+            }
+        }
+    }
+
+    showContradictionSection() {
+        const section = document.getElementById('contradictionSection');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            document.getElementById('contradictionBtn').textContent = '🔍 Hide Contradiction Detection';
+        } else {
+            section.style.display = 'none';
+            document.getElementById('contradictionBtn').textContent = '🔍 Detect Contradictions';
+        }
+    }
+
+    async handleContradictionAnalysis() {
+        alert('Button clicked! Starting analysis...');
+        
+        const analysisType = document.querySelector('input[name="analysisType"]:checked');
+        if (!analysisType) {
+            alert('Error: Please select an analysis type (Internal/Cross/Progression)');
+            return;
+        }
+        
+        const llmProvider = document.getElementById('llmProvider').value;
+        if (!llmProvider) {
+            alert('Error: Please select an LLM provider first');
+            return;
+        }
+
+        const apiKey = document.getElementById('apiKey').value;
+        if (llmProvider !== 'OLLAMA' && !apiKey) {
+            alert('Error: Please provide an API key for ' + llmProvider);
+            return;
+        }
+
+        alert('Validation passed. Analysis type: ' + analysisType.value + ', Provider: ' + llmProvider);
+
+        let selectedFiles = [];
+        
+        if (analysisType.value === 'internal') {
+            const selectedFile = document.getElementById('contradictionFile').value;
+            if (!selectedFile) {
+                alert('Error: Please select a curriculum file for internal analysis');
+                return;
+            }
+            selectedFiles = [selectedFile];
+        } else {
+            const containerId = analysisType.value === 'cross' ? 'curriculaCheckboxes' : 'progressionCheckboxes';
+            const checkboxes = document.querySelectorAll(`#${containerId} input[type="checkbox"]:checked`);
+            selectedFiles = Array.from(checkboxes).map(cb => cb.value);
+            
+            if (selectedFiles.length < 2) {
+                alert('Error: Please select at least 2 curricula for ' + analysisType.value + ' analysis');
+                return;
+            }
+        }
+
+        alert('Files selected: ' + selectedFiles.join(', ') + '. Making API call...');
+
+        const fd = new FormData();
+        selectedFiles.forEach(file => fd.append('curriculum_files', file));
+        fd.append('analysis_type', analysisType.value);
+        const detectionMethod = document.querySelector('input[name="detectionMethod"]:checked');
+        if (detectionMethod) {
+            fd.append('detection_method', detectionMethod.value);
+        }
+        fd.append('llm_provider', llmProvider);
+        if (apiKey) fd.append('api_key', apiKey);
+        
+        const modelName = document.getElementById('modelName').value;
+        if (modelName) fd.append('model_name', modelName);
+
+        this.showProgress();
+        document.getElementById('analyzeBtn').disabled = true;
+        document.getElementById('analyzeBtn').innerHTML = '<div class="loading-spinner"></div>Analyzing...';
+
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/detect-contradictions`, {
+                method: 'POST',
+                body: fd
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.detail || 'Analysis failed');
+            }
+
+            const result = await response.json();
+            alert('Analysis completed successfully!');
+            this.lastContradictionResult = result;
+            this.displayContradictionResults(result);
+            this.showAlert('success', 'Contradiction analysis completed!');
+
+        } catch (error) {
+            alert('Analysis failed: ' + error.message);
+            this.showAlert('error', 'Analysis failed: ' + error.message);
+        } finally {
+            this.hideProgress();
+            document.getElementById('analyzeBtn').disabled = false;
+            document.getElementById('analyzeBtn').innerHTML = '🔬 Analyze Contradictions';
+        }
+    }
+
+    displayContradictionResults(result) {
+        const resultsSection = document.getElementById('contradictionResults');
+        const summary = document.getElementById('contradictionSummary');
+        const list = document.getElementById('contradictionsList');
+        const report = document.getElementById('analysisReport');
+
+        // Clear previous results
+        summary.innerHTML = '';
+        list.innerHTML = '';
+        report.innerHTML = '';
+
+        // Display summary statistics
+        if (result.contradictions && result.contradictions.length > 0) {
+            const severityCounts = { high: 0, medium: 0, low: 0 };
+            result.contradictions.forEach(c => {
+                severityCounts[c.severity] = (severityCounts[c.severity] || 0) + 1;
+            });
+
+            summary.innerHTML = `
+                <div class="contradiction-stat high-severity">
+                    <div class="contradiction-number">${severityCounts.high}</div>
+                    <div class="contradiction-label">High Priority</div>
+                </div>
+                <div class="contradiction-stat medium-severity">
+                    <div class="contradiction-number">${severityCounts.medium}</div>
+                    <div class="contradiction-label">Medium Priority</div>
+                </div>
+                <div class="contradiction-stat low-severity">
+                    <div class="contradiction-number">${severityCounts.low}</div>
+                    <div class="contradiction-label">Low Priority</div>
+                </div>
+                <div class="contradiction-stat">
+                    <div class="contradiction-number">${result.contradictions.length}</div>
+                    <div class="contradiction-label">Total Issues</div>
+                </div>
+            `;
+
+            // Display detailed contradictions
+            result.contradictions.forEach(contradiction => {
+                const item = document.createElement('div');
+                item.className = `contradiction-item ${contradiction.severity}`;
+                item.innerHTML = `
+                    <div class="contradiction-type">${contradiction.type.replace(/_/g, ' ')}</div>
+                    <div class="contradiction-description">${contradiction.description}</div>
+                    ${contradiction.elements ? `<div class="contradiction-elements">Affected elements: ${contradiction.elements.join(', ')}</div>` : ''}
+                    ${contradiction.recommendation ? `<div class="contradiction-recommendation">Recommendation: ${contradiction.recommendation}</div>` : ''}
+                `;
+                list.appendChild(item);
+            });
+        } else {
+            summary.innerHTML = `
+                <div class="contradiction-stat">
+                    <div class="contradiction-number">0</div>
+                    <div class="contradiction-label">No Contradictions Found</div>
+                </div>
+            `;
+            list.innerHTML = '<p>No contradictions were detected in the analysis.</p>';
+        }
+
+        // Display analysis report
+        if (result.report) {
+            report.innerHTML = `<h4>Analysis Report</h4><div>${result.report.replace(/\n/g, '<br>')}</div>`;
+        } else if (result.overall_assessment) {
+            report.innerHTML = `<h4>Overall Assessment</h4><div>${result.overall_assessment}</div>`;
+        }
+
+        resultsSection.style.display = 'block';
+    }
+
+    async downloadReport() {
+        if (!this.lastContradictionResult) {
+            this.showAlert('error', 'No contradiction analysis results to download.');
+            return;
+        }
+
+        try {
+            let reportContent = '# Contradiction Analysis Report\n\n';
+            
+            if (this.lastContradictionResult.contradictions) {
+                reportContent += `## Summary\n`;
+                reportContent += `Total contradictions found: ${this.lastContradictionResult.contradictions.length}\n\n`;
+                
+                const severityCounts = { high: 0, medium: 0, low: 0 };
+                this.lastContradictionResult.contradictions.forEach(c => {
+                    severityCounts[c.severity] = (severityCounts[c.severity] || 0) + 1;
+                });
+                
+                reportContent += `- High priority: ${severityCounts.high}\n`;
+                reportContent += `- Medium priority: ${severityCounts.medium}\n`;
+                reportContent += `- Low priority: ${severityCounts.low}\n\n`;
+                
+                reportContent += `## Detailed Findings\n\n`;
+                this.lastContradictionResult.contradictions.forEach((c, i) => {
+                    reportContent += `### ${i + 1}. ${c.type.replace(/_/g, ' ')} (${c.severity} priority)\n`;
+                    reportContent += `${c.description}\n\n`;
+                    if (c.elements) {
+                        reportContent += `**Affected elements:** ${c.elements.join(', ')}\n\n`;
+                    }
+                    if (c.recommendation) {
+                        reportContent += `**Recommendation:** ${c.recommendation}\n\n`;
+                    }
+                });
+            }
+            
+            if (this.lastContradictionResult.report) {
+                reportContent += `## Analysis Report\n\n${this.lastContradictionResult.report}\n`;
+            }
+
+            const blob = new Blob([reportContent], { type: 'text/markdown' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'contradiction_analysis_report.md';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            a.remove();
+            
+            this.showAlert('success', 'Report downloaded successfully!');
+        } catch (error) {
+            this.showAlert('error', 'Failed to download report: ' + error.message);
+        }
+    }
+
+    async copyReport() {
+        if (!this.lastContradictionResult) {
+            this.showAlert('error', 'No contradiction analysis results to copy.');
+            return;
+        }
+
+        try {
+            let reportText = 'Contradiction Analysis Report\n\n';
+            
+            if (this.lastContradictionResult.contradictions) {
+                this.lastContradictionResult.contradictions.forEach((c, i) => {
+                    reportText += `${i + 1}. ${c.type.replace(/_/g, ' ')} (${c.severity})\n`;
+                    reportText += `${c.description}\n`;
+                    if (c.recommendation) {
+                        reportText += `Recommendation: ${c.recommendation}\n`;
+                    }
+                    reportText += '\n';
+                });
+            }
+            
+            if (this.lastContradictionResult.report) {
+                reportText += `\nAnalysis Report:\n${this.lastContradictionResult.report}`;
+            }
+
+            await navigator.clipboard.writeText(reportText);
+            this.showAlert('success', 'Report copied to clipboard!');
+        } catch (error) {
+            this.showAlert('error', 'Failed to copy report: ' + error.message);
+        }
+    }
+
+    async handleSubmit(e) {
+        e.preventDefault();
+        const sourceOption = document.querySelector('input[name="sourceOption"]:checked').value;
+        if (sourceOption === 'upload' && !this.selectedFiles.length) return this.showAlert('error', 'Please select a PDF.');
+        if (sourceOption === 'local' && !document.getElementById('localCurriculum').value) return this.showAlert('error', 'Please select a local curriculum.');
+
+        const fd = new FormData();
+        if (sourceOption === 'upload') this.selectedFiles.forEach(f => fd.append('files', f));
+        else fd.append('local_curriculum', document.getElementById('localCurriculum').value);
+        fd.append('extraction_mode', document.getElementById('extractionMode').value);
+        fd.append('llm_provider', document.getElementById('llmProvider').value);
+        const apiKey = document.getElementById('apiKey').value; if (apiKey) fd.append('api_key', apiKey);
+        const modelName = document.getElementById('modelName').value; if (modelName) fd.append('model_name', modelName);
+
+        this.showProgress();
+        this.setButtonLoading(true);
+        try {
+            const endpoint = sourceOption === 'upload' ? 'extract' : 'extract-local';
+            const res = await fetch(`${this.apiBaseUrl}/${endpoint}`, { method: 'POST', body: fd });
+            if (!res.ok) { const err = await res.json(); throw new Error(err.detail || 'Extraction failed'); }
+            const result = await res.json();
+            this.displayResults(result);
+            this.showAlert('success', 'Extraction completed!');
+        } catch (err) {
+            this.showAlert('error', 'Failed: ' + err.message);
+        } finally {
+            this.hideProgress();
+            this.setButtonLoading(false);
+        }
+    }
+
+    showProgress() { document.getElementById('progressContainer').style.display = 'block'; this.animateProgress(); }
+    hideProgress() { document.getElementById('progressContainer').style.display = 'none'; document.getElementById('progressFill').style.width = '0%'; }
+    animateProgress() {
+        const fill = document.getElementById('progressFill');
+        const text = document.getElementById('progressText');
+        const steps = [{ w: '20%', t: 'Processing PDF...' }, { w: '40%', t: 'Extracting text...' }, { w: '60%', t: 'Analyzing structure...' }, { w: '80%', t: 'Generating ontology...' }, { w: '100%', t: 'Finalizing...' }];
+        let i = 0;
+        const update = () => { if (i < steps.length) { fill.style.width = steps[i].w; text.textContent = steps[i].t; i++; setTimeout(update, 800); } };
+        update();
+    }
+    setButtonLoading(l) {
+        const btn = document.getElementById('extractBtn');
+        if (l) { btn.innerHTML = '<div class="loading-spinner"></div>Processing...'; btn.disabled = true; } else { btn.innerHTML = '🚀 Extract Ontology'; btn.disabled = false; }
+    }
+
+    displayResults(result) {
+        this.lastResult = result;
+        const statsContainer = document.getElementById('resultsStats');
+        statsContainer.innerHTML = '';
+        for (const [k, v] of Object.entries(result.extracted_elements || {})) { statsContainer.innerHTML += `<div class="stat-card"><div class="stat-number">${v}</div><div class="stat-label">${k}</div></div>`; }
+        if (result.json_graph?.overview) {
+            statsContainer.innerHTML += `<div class="stat-card"><div class="stat-number">${result.json_graph.overview.entities}</div><div class="stat-label">Entities</div></div>`;
+            statsContainer.innerHTML += `<div class="stat-card"><div class="stat-number">${result.json_graph.overview.relations}</div><div class="stat-label">Relations</div></div>`;
+        }
+        document.getElementById('turtleOutput').textContent = result.turtle_output || 'No turtle output';
+        this.renderKnowledgeGraph(result.json_graph);
+        this.displayLists(result);
+        
+        // Add event listener to the new toggle buttons
+        document.querySelectorAll('.toggle-list-btn').forEach(btn => {
+            btn.addEventListener('click', this.handleListToggle.bind(this));
+        });
+
+        document.getElementById('resultsSection').style.display = 'block';
+    }
+
+    displayLists(result) {
+        const entitiesList = document.getElementById('entitiesList');
+        const relationsList = document.getElementById('relationsList');
+        const conceptsList = document.getElementById('conceptsList');
+
+        entitiesList.innerHTML = '';
+        relationsList.innerHTML = '';
+        conceptsList.innerHTML = '';
+
+        if (!result.json_graph || !result.json_graph.nodes || !result.json_graph.links) {
+            return;
+        }
+
+        const nodesMap = new Map();
+        result.json_graph.nodes.forEach(node => {
+            nodesMap.set(node.id, node);
+        });
+
+        // Populate the entities list (non-concept nodes)
+        result.json_graph.nodes.filter(node => node.category !== 'concept').forEach(node => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.className = 'list-btn';
+            
+            // Use Greek label or description as display text
+            let displayText = node.label || node.description || node.uri_fragment || node.id.split('/').pop();
+            if (displayText.length > 50) {
+                displayText = displayText.substring(0, 47) + '...';
+            }
+            
+            button.textContent = displayText;
+            button.title = node.description || node.label; // Show full text on hover
+            button.onclick = () => {
+                this.highlightNode(node.id);
+            };
+            li.appendChild(button);
+            entitiesList.appendChild(li);
+        });
+
+        // Populate the concepts list (concept nodes)
+        result.json_graph.nodes.filter(node => node.category === 'concept').forEach(node => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.className = 'list-btn';
+            
+            // Use Greek label or description as display text
+            let displayText = node.label || node.description || node.uri_fragment || node.id.split('/').pop();
+            if (displayText.length > 50) {
+                displayText = displayText.substring(0, 47) + '...';
+            }
+            
+            button.textContent = displayText;
+            button.title = node.description || node.label; // Show full text on hover
+            button.onclick = () => {
+                this.highlightNode(node.id);
+            };
+            li.appendChild(button);
+            conceptsList.appendChild(li);
+        });
+
+        // Populate the relations list using enriched relation data
+        result.json_graph.links.forEach(link => {
+            const li = document.createElement('li');
+            const button = document.createElement('button');
+            button.className = 'list-btn';
+            
+            // Use the enriched full_relation string if available, otherwise construct it
+            if (link.full_relation) {
+                button.textContent = link.full_relation;
+                button.title = link.full_relation; // Full text on hover
+            } else {
+                // Fallback to constructing from node map
+                const sourceNode = nodesMap.get(link.source);
+                const targetNode = nodesMap.get(link.target);
+                
+                if (sourceNode && targetNode) {
+                    const sourceLabel = sourceNode.label || sourceNode.description || sourceNode.uri_fragment || 'Unknown';
+                    const targetLabel = targetNode.label || targetNode.description || targetNode.uri_fragment || 'Unknown';
+                    
+                    const shortSourceLabel = sourceLabel.length > 20 ? sourceLabel.substring(0, 17) + '...' : sourceLabel;
+                    const shortTargetLabel = targetLabel.length > 20 ? targetLabel.substring(0, 17) + '...' : targetLabel;
+                    
+                    button.textContent = `${shortSourceLabel} —[${link.label}]→ ${shortTargetLabel}`;
+                    button.title = `${sourceLabel} —[${link.label}]→ ${targetLabel}`;
+                } else {
+                    button.textContent = `[${link.label}]`;
+                }
+            }
+
+            button.onclick = () => {
+                this.highlightLink(link);
+            };
+            li.appendChild(button);
+            relationsList.appendChild(li);
+        });
+    }
+
+    handleListToggle(event) {
+        const targetId = event.target.dataset.target;
+        
+        // Remove 'active' class from all buttons and lists
+        document.querySelectorAll('.toggle-list-btn').forEach(btn => btn.classList.remove('active'));
+        document.querySelectorAll('.list-group > ul').forEach(list => list.classList.remove('active'));
+        
+        // Add 'active' class to the clicked button and its target list
+        event.target.classList.add('active');
+        document.getElementById(targetId).classList.add('active');
+    }
+
+    highlightNode(nodeId) {
+        this.graphNodes.attr('stroke', '#fff').attr('stroke-width', 2);
+        this.graphLinks.attr('stroke', '#999').attr('stroke-width', 2);
+        this.graphNodes.filter(d => d.id === nodeId).attr('stroke', 'gold').attr('stroke-width', 4);
+        
+        this.graphLinks.filter(d => d.source.id === nodeId || d.target.id === nodeId).attr('stroke', 'red').attr('stroke-width', 4);
+    }
+    
+    highlightLink(link) {
+        this.graphNodes.attr('stroke', '#fff').attr('stroke-width', 2);
+        this.graphLinks.attr('stroke', '#999').attr('stroke-width', 2);
+        
+        // Find the actual link object in the D3 simulation data
+        this.graphLinks.filter(d => {
+            const sourceId = typeof d.source === 'object' ? d.source.id : d.source;
+            const targetId = typeof d.target === 'object' ? d.target.id : d.target;
+            const linkSourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const linkTargetId = typeof link.target === 'object' ? link.target.id : link.target;
+            
+            return sourceId === linkSourceId && targetId === linkTargetId;
+        }).attr('stroke', 'red').attr('stroke-width', 4);
+        
+        // Highlight connected nodes
+        this.graphNodes.filter(d => {
+            const linkSourceId = typeof link.source === 'object' ? link.source.id : link.source;
+            const linkTargetId = typeof link.target === 'object' ? link.target.id : link.target;
+            return d.id === linkSourceId || d.id === linkTargetId;
+        }).attr('stroke', 'gold').attr('stroke-width', 4);
+    }
+    handleDetectionMethodChange(e) {
+        const ragStatus = document.getElementById('ragStatus');
+        if (e.target.value === 'rag_enhanced') {
+            ragStatus.style.display = 'flex';
+            this.checkRAGStatus();
+        } else {
+            ragStatus.style.display = 'none';
+        }
+    }
+    async checkRAGStatus() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/rag-status`);
+            const status = await response.json();
+            
+            const statusText = document.getElementById('ragStatusText');
+            const countText = document.getElementById('ragCurriculaCount');
+            
+            if (status.available) {
+                statusText.textContent = 'RAG Enhancement Available';
+                countText.textContent = `${status.curricula_count} curricula in database`;
+            } else {
+                statusText.textContent = 'RAG Enhancement Unavailable';
+                countText.textContent = status.message;
+            }
+        } catch (error) {
+            document.getElementById('ragStatusText').textContent = 'RAG Status Check Failed';
+            document.getElementById('ragCurriculaCount').textContent = error.message;
+        }
+    }
+    renderKnowledgeGraph(data) {
+        const svg = d3.select('#knowledgeGraph');
+        svg.selectAll('*').remove();
+
+        if (!data?.nodes?.length) {
+            svg.append('text').attr('x', '50%').attr('y', '50%').attr('text-anchor', 'middle').text('No graph data');
+            return;
+        }
+
+        const width = +svg.node().getBoundingClientRect().width;
+        const height = +svg.node().getBoundingClientRect().height;
+
+        const container = svg.append('g');
+        svg.call(d3.zoom().scaleExtent([0.2, 4]).on('zoom', e => container.attr('transform', e.transform)));
+
+        const simulation = d3.forceSimulation(data.nodes)
+            .force('link', d3.forceLink(data.links).id(d => d.id).distance(120))
+            .force('charge', d3.forceManyBody().strength(-300))
+            .force('center', d3.forceCenter(width / 2, height / 2))
+            .force('collision', d3.forceCollide().radius(25));
+
+        // Create tooltip
+        const tooltip = d3.select('#tooltip');
+
+        this.graphLinks = container.append('g').selectAll('line').data(data.links).enter().append('line')
+            .attr('stroke', '#999')
+            .attr('stroke-width', 2);
+        
+        this.graphNodes = container.append('g').selectAll('circle').data(data.nodes).enter().append('circle')
+            .attr('r', d => d.category === 'concept' ? 8 : 12)
+            .attr('fill', d => d.color || (d.category === 'concept' ? '#8b5cf6' : '#3b82f6'))
+            .attr('stroke', '#fff')
+            .attr('stroke-width', 2)
+            .style('cursor', 'pointer')
+            .on('mouseover', function(event, d) {
+                tooltip.style('opacity', 1)
+                    .html(`<strong>${d.label}</strong><br/>
+                           Type: ${d.type}<br/>
+                           ${d.description ? 'Description: ' + d.description + '<br/>' : ''}
+                           ${d.gradeLevel ? 'Grade: ' + d.gradeLevel + '<br/>' : ''}
+                           ${d.cognitiveLevel ? 'Cognitive Level: ' + d.cognitiveLevel : ''}`)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 10) + 'px');
+            })
+            .on('mouseout', function() {
+                tooltip.style('opacity', 0);
+            })
+            .call(this.drag(simulation));
+
+        // Create text labels with proper Greek text handling
+        const labels = container.append('g').selectAll('text').data(data.nodes).enter().append('text')
+            .attr('dy', -15)
+            .attr('text-anchor', 'middle')
+            .attr('font-size', '12px')
+            .attr('font-weight', '500')
+            .attr('fill', '#333')
+            .style('pointer-events', 'none')
+            .each(function(d) {
+                const text = d3.select(this);
+                // Use the Greek label or fallback to description/URI fragment
+                let displayText = d.label || d.description || d.uri_fragment || d.id.split('/').pop();
+                
+                // Truncate long text for display
+                if (displayText.length > 20) {
+                    displayText = displayText.substring(0, 17) + '...';
+                }
+                
+                text.text(displayText);
+            });
+
+        // Add link labels for important relationships
+        const linkLabels = container.append('g').selectAll('text').data(data.links).enter().append('text')
+            .attr('font-size', '10px')
+            .attr('fill', '#666')
+            .attr('text-anchor', 'middle')
+            .style('pointer-events', 'none')
+            .text(d => d.label);
+
+        simulation.on('tick', () => {
+            this.graphLinks
+                .attr('x1', d => d.source.x)
+                .attr('y1', d => d.source.y)
+                .attr('x2', d => d.target.x)
+                .attr('y2', d => d.target.y);
+            
+            this.graphNodes
+                .attr('cx', d => d.x)
+                .attr('cy', d => d.y);
+                
+            labels
+                .attr('x', d => d.x)
+                .attr('y', d => d.y);
+                
+            linkLabels
+                .attr('x', d => (d.source.x + d.target.x) / 2)
+                .attr('y', d => (d.source.y + d.target.y) / 2);
+        });
+    }
+
+    drag(sim) {
+        function start(e, d) { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; }
+        function drag(e, d) { d.fx = e.x; d.fy = e.y; }
+        function end(e, d) { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }
+        return d3.drag().on('start', start).on('drag', drag).on('end', end);
+    }
+    
+    async downloadTurtle() {
+        if (!this.lastResult) return this.showAlert('error', 'No results');
+        try {
+            const fn = this.lastResult.output_filename || 'ontology.ttl';
+            const res = await fetch(`${this.apiBaseUrl}/download/${fn}`);
+            if (!res.ok) throw new Error();
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = fn; document.body.appendChild(a); a.click(); URL.revokeObjectURL(url); a.remove();
+            this.showAlert('success', 'Downloaded!');
+        } catch { this.showAlert('error', 'Download failed'); }
+    }
+
+    async copyToClipboard() {
+        if (!this.lastResult?.turtle_output) return this.showAlert('error', 'No turtle');
+        try { await navigator.clipboard.writeText(this.lastResult.turtle_output); this.showAlert('success', 'Copied!'); } catch { this.showAlert('error', 'Copy failed'); }
+    }
+    showQuerySection() {
+        const section = document.getElementById('querySection');
+        if (section.style.display === 'none') {
+            section.style.display = 'block';
+            document.getElementById('queryBtn').textContent = '🔍 Hide Query Interface';
+            this.handleQueryTypeChange();
+        } else {
+            section.style.display = 'none';
+            document.getElementById('queryBtn').textContent = '🔍 Query Ontology';
+        }
+    }
+
+    handleQueryTypeChange() {
+        const queryType = document.getElementById('queryType').value;
+        const paramsContainer = document.getElementById('queryParams');
+        
+        switch (queryType) {
+            case 'modules_by_topic':
+                paramsContainer.innerHTML = `
+                    <label for="topicInput">Enter Topic</label>
+                    <input type="text" id="topicInput" placeholder="e.g., οικογένεια, διατροφή">
+                `;
+                break;
+            case 'learning_path_steps':
+                paramsContainer.innerHTML = `
+                    <label for="personaSelect">Select Persona</label>
+                    <select id="personaSelect">
+                        <option value="instructor">Instructor</option>
+                        <option value="developer">Developer</option>
+                        <option value="analyst">Analyst</option>
+                    </select>
+                `;
+                break;
+            case 'sparql':
+                paramsContainer.innerHTML = `
+                    <label for="sparqlInput">SPARQL Query</label>
+                    <textarea id="sparqlInput" class="sparql-input" placeholder="Enter SPARQL query..."></textarea>
+                `;
+                break;
+            default:
+                paramsContainer.innerHTML = '<p>No additional parameters needed.</p>';
+        }
+    }
+
+    async executeQuery() {
+        const queryType = document.getElementById('queryType').value;
+        const params = {};
+        
+        switch (queryType) {
+            case 'modules_by_topic':
+                params.topic = document.getElementById('topicInput')?.value || '';
+                break;
+            case 'learning_path_steps':
+                params.persona = document.getElementById('personaSelect')?.value || '';
+                break;
+            case 'sparql':
+                params.query = document.getElementById('sparqlInput')?.value || '';
+                break;
+        }
+        
+        document.getElementById('executeQueryBtn').disabled = true;
+        document.getElementById('executeQueryBtn').innerHTML = '<div class="loading-spinner"></div>Querying...';
+        
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/query-ontology`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query_type: queryType,
+                    params: params
+                })
+            });
+            
+            const result = await response.json();
+            this.displayQueryResults(result);
+            
+        } catch (error) {
+            this.showAlert('error', 'Query failed: ' + error.message);
+        } finally {
+            document.getElementById('executeQueryBtn').disabled = false;
+            document.getElementById('executeQueryBtn').innerHTML = '🔎 Execute Query';
+        }
+    }
+
+    displayQueryResults(result) {
+        const resultsSection = document.getElementById('queryResults');
+        const content = document.getElementById('queryResultsContent');
+        
+        if (result.error) {
+            content.innerHTML = `<div class="alert alert-error">${result.error}</div>`;
+            resultsSection.style.display = 'block';
+            return;
+        }
+        
+        content.innerHTML = `
+            <div style="margin-bottom: 20px;">
+                <p><strong>Query:</strong> ${result.query_type}</p>
+                <p><strong>Results:</strong> ${result.count}</p>
+                <p><strong>Source:</strong> ${result.source_file}</p>
+            </div>
+        `;
+        
+        if (result.results && result.results.length > 0) {
+            const resultsHtml = result.results.map(item => {
+                if (result.query_type === 'modules_by_topic' || result.query_type === 'all_modules') {
+                    return `
+                        <div class="query-result-item">
+                            <div class="query-result-title">${item.title}</div>
+                            <div class="query-result-description">${item.description || 'No description'}</div>
+                            ${item.matching_topic ? `<div><strong>Topic:</strong> ${item.matching_topic}</div>` : ''}
+                        </div>
+                    `;
+                } else if (result.query_type === 'learning_path_steps') {
+                    return `
+                        <div class="query-result-item">
+                            <div class="query-result-title">Step ${item.step_number}</div>
+                            <div class="query-result-description">${item.description}</div>
+                        </div>
+                    `;
+                } else {
+                    return `<div class="query-result-item"><pre>${JSON.stringify(item, null, 2)}</pre></div>`;
+                }
+            }).join('');
+            
+            content.innerHTML += resultsHtml;
+        } else {
+            content.innerHTML += '<p>No results found.</p>';
+        }
+        
+        resultsSection.style.display = 'block';
+    }
+    showAlert(type, msg) {
+        const c = document.getElementById('alert-container');
+        const id = 'a-' + Date.now();
+        c.innerHTML = `<div id="${id}" class="alert alert-${type}">${msg}</div>`;
+        setTimeout(() => { const el = document.getElementById(id); if (el) el.remove(); }, 4000);
+    }
+}
+
+const extractor = new CurriculumExtractor();
+</script>
